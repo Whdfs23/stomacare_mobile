@@ -10,8 +10,8 @@ import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'theme/app_colors.dart';
 
-const _supabaseUrl  = 'https://fwxcurmukfswczbuawmh.supabase.co'; 
-const _supabaseKey  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3eGN1cm11a2Zzd2N6YnVhd21oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5MTcyNDAsImV4cCI6MjA5NjQ5MzI0MH0.u2bcYIXEF_cXQX6BvczPKn0dMYGDQPTz07ie8KrDCjU'; 
+const _supabaseUrl  = ''; 
+const _supabaseKey  = ''; 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
