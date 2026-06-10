@@ -1,23 +1,52 @@
 name: stomacare
 description: StomaCare - Aplikasi Pencatatan Makanan dan Kesehatan Lambung
 publish_to: 'none'
-version: 1.0.0+1
+version: 2.0.0+1
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
 
 dependencies:
+  
   flutter:
     sdk: flutter
+
+  # UI & Fonts
   google_fonts: ^6.1.0
   fl_chart: ^0.68.0
   intl: ^0.19.0
-  supabase_flutter: ^2.5.0
+
+  # Supabase — Auth + DB cloud
+  supabase_flutter: ^2.5.6
+
+  # Local persistence — offline fallback
+  hive_flutter: ^1.1.0
+  hive: ^2.2.3
+
+  # Notifikasi lokal
+  flutter_local_notifications: ^17.2.2
+  timezone: ^0.9.4
+
+  # Utility
+  uuid: ^4.4.2
+  shared_preferences: ^2.3.2
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
 
 dev_dependencies:
+  
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.9
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: false
+  image_path: "assets/icon.png"
+  min_sdk_android: 21

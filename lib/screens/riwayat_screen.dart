@@ -27,7 +27,6 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
     }
   }
 
-  // Group entries by date
   Map<String, List<FoodEntry>> _groupByDate(List<FoodEntry> entries) {
     final Map<String, List<FoodEntry>> grouped = {};
     for (final e in entries) {
@@ -39,21 +38,24 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final allEntries = List<FoodEntry>.from(AppState().entries)
-      ..sort((a, b) => b.date.compareTo(a.date));
+    final state = AppState.instance;
 
-    final visible = allEntries.take(_visibleCount).toList();
-    final grouped = _groupByDate(visible);
-    final keys    = grouped.keys.toList();
+    // 💡 PENYELESAIAN UTAMA: Merangkul layar dengan ListenableBuilder
+    return ListenableBuilder(
+      listenable: state,
+      builder: (context, _) {
+        final allEntries = List<FoodEntry>.from(state.foodEntries)
+          ..sort((a, b) => b.date.compareTo(a.date));
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
+        final visible = allEntries.take(_visibleCount).toList();
+        final grouped = _groupByDate(visible);
+        final keys    = grouped.keys.toList();
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: SafeArea(
+            child: Column(
               children: [
-                // ── Header ─────────────────────────────────────────────────
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                   child: Row(
@@ -62,25 +64,16 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Riwayat',
-                              style: GoogleFonts.plusJakartaSans(
-                                fontSize: 26,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textDark,
-                              )),
-                          Text('Pantau semua catatan makanmu.',
-                              style: GoogleFonts.plusJakartaSans(
-                                  fontSize: 13, color: AppColors.textGray)),
+                          Text('Riwayat', style: GoogleFonts.plusJakartaSans(fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textDark)),
+                          Text('Pantau semua catatan makanmu.', style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.textGray)),
                         ],
                       ),
-                      _AvatarBadge(
-                          letter: AppState().username[0].toUpperCase()),
+                      // FOTO PROFIL OTOMATIS TAMPIL DI SINI
+                      _AvatarBadge(letter: state.userInitial, imageUrl: state.avatarUrl),
                     ],
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // ── List ───────────────────────────────────────────────────
                 Expanded(
                   child: RefreshIndicator(
                     color: AppColors.primary,
@@ -90,50 +83,29 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                       itemCount: keys.length + 1,
                       itemBuilder: (ctx, idx) {
                         if (idx == keys.length) {
-                          // Load more / end
                           return Column(
                             children: [
                               if (_visibleCount < allEntries.length) ...[
                                 const SizedBox(height: 12),
                                 Center(
                                   child: OutlinedButton(
-                                    onPressed: () => setState(
-                                        () => _visibleCount += 5),
+                                    onPressed: () => setState(() => _visibleCount += 5),
                                     style: OutlinedButton.styleFrom(
-                                      side: BorderSide(
-                                          color: AppColors.primary
-                                              .withOpacity(0.4)),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(20)),
+                                      side: BorderSide(color: AppColors.primary.withValues(alpha: 0.4)),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                       backgroundColor: AppColors.mintBg,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 32, vertical: 12),
+                                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                                     ),
-                                    child: Text('Muat Lebih Banyak',
-                                        style: GoogleFonts.plusJakartaSans(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.primary,
-                                        )),
+                                    child: Text('Muat Lebih Banyak', style: GoogleFonts.plusJakartaSans(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primary)),
                                   ),
                                 ),
                               ] else if (allEntries.isEmpty) ...[
                                 const SizedBox(height: 60),
                                 Column(
                                   children: [
-                                    const Icon(Icons.inbox_rounded,
-                                        color: AppColors.textLight, size: 52),
+                                    const Icon(Icons.inbox_rounded, color: AppColors.textLight, size: 52),
                                     const SizedBox(height: 12),
-                                    Text('Belum ada catatan',
-                                        style: GoogleFonts.plusJakartaSans(
-                                            color: AppColors.textGray,
-                                            fontSize: 15)),
-                                    const SizedBox(height: 4),
-                                    Text('Tambah catatan pertamamu!',
-                                        style: GoogleFonts.plusJakartaSans(
-                                            color: AppColors.textLight,
-                                            fontSize: 13)),
+                                    Text('Belum ada catatan', style: GoogleFonts.plusJakartaSans(color: AppColors.textGray, fontSize: 15)),
                                   ],
                                 ),
                               ],
@@ -148,28 +120,15 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 16),
-                            // Date header
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: AppColors.mintBg,
-                                borderRadius: BorderRadius.circular(10),
-                                border: Border.all(
-                                    color: AppColors.mintLight, width: 1),
-                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(color: AppColors.mintBg, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.mintLight, width: 1)),
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.calendar_today_outlined,
-                                      color: AppColors.primary, size: 14),
+                                  const Icon(Icons.calendar_today_outlined, color: AppColors.primary, size: 14),
                                   const SizedBox(width: 6),
-                                  Text(dateKey,
-                                      style: GoogleFonts.plusJakartaSans(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.primary,
-                                      )),
+                                  Text(dateKey, style: GoogleFonts.plusJakartaSans(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary)),
                                 ],
                               ),
                             ),
@@ -177,8 +136,12 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                             ...dayEntries.map((e) => _EntryCard(
                                   entry: e,
                                   emoji: _mealTimeEmoji(e.mealTime),
+                                  onEdit: () async {
+                                    await Navigator.push(context, MaterialPageRoute(builder: (_) => CatatMakananScreen(entryToEdit: e)));
+                                    setState(() {}); 
+                                  },
                                   onDelete: () {
-                                    AppState().entries.remove(e);
+                                    AppState.instance.deleteFoodEntry(e);
                                     setState(() {});
                                   },
                                 )),
@@ -190,80 +153,25 @@ class _RiwayatScreenState extends State<RiwayatScreen> {
                 ),
               ],
             ),
-
-            // ── FAB ────────────────────────────────────────────────────────
-            Positioned(
-              right: 20,
-              bottom: 20,
-              child: FloatingActionButton(
-                onPressed: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const CatatMakananScreen()),
-                  );
-                  setState(() {});
-                },
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 4,
-                shape: const CircleBorder(),
-                child: const Icon(Icons.add_rounded, size: 28),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      }
     );
   }
 }
 
-// ─── Entry Card ───────────────────────────────────────────────────────────────
-
 class _EntryCard extends StatelessWidget {
-  final FoodEntry entry;
-  final String emoji;
-  final VoidCallback onDelete;
-  const _EntryCard(
-      {required this.entry, required this.emoji, required this.onDelete});
-
-  Color _painBadgeColor(int pain) {
-    if (pain == 0)  return AppColors.badgeGreenBg;
-    if (pain <= 4)  return AppColors.orangeBg;
-    if (pain <= 7)  return const Color(0xFFFFE5CC);
-    return AppColors.pinkBg;
-  }
-
-  Color _painTextColor(int pain) {
-    if (pain == 0)  return AppColors.badgeGreenText;
-    if (pain <= 4)  return AppColors.orangeText;
-    if (pain <= 7)  return const Color(0xFFD97706);
-    return AppColors.pinkText;
-  }
+  final FoodEntry entry; final String emoji; final VoidCallback onDelete; final VoidCallback onEdit;
+  const _EntryCard({required this.entry, required this.emoji, required this.onDelete, required this.onEdit});
 
   @override
   Widget build(BuildContext context) {
-    final painColor   = _painBadgeColor(entry.painLevel);
-    final painTxtClr  = _painTextColor(entry.painLevel);
-    final cond        = entry.stomachCondition;
-    final condColor   = (cond == 'Buruk')
-        ? AppColors.pinkText
-        : AppColors.badgeGreenText;
+    final painColor = entry.painLevel == 0 ? AppColors.badgeGreenBg : entry.painLevel <= 4 ? AppColors.orangeBg : AppColors.pinkBg;
+    final painTxtClr = entry.painLevel == 0 ? AppColors.badgeGreenText : entry.painLevel <= 4 ? AppColors.orangeText : AppColors.pinkText;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+      margin: const EdgeInsets.only(bottom: 10), padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -271,122 +179,59 @@ class _EntryCard extends StatelessWidget {
             children: [
               Text(emoji, style: const TextStyle(fontSize: 20)),
               const SizedBox(width: 10),
-              Expanded(
-                child: Text(entry.foodName,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textDark,
-                    )),
-              ),
+              Expanded(child: Text(entry.foodName, style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark))),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: painColor,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text('Nyeri: ${entry.painLevel}/10',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: painTxtClr,
-                    )),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: painColor, borderRadius: BorderRadius.circular(8)),
+                child: Text('Nyeri: ${entry.painLevel}/10', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: painTxtClr)),
               ),
             ],
           ),
-
-          if (entry.drink.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                const Icon(Icons.local_drink_outlined,
-                    color: AppColors.textLight, size: 14),
-                const SizedBox(width: 5),
-                Text(entry.drink,
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13, color: AppColors.textGray)),
-              ],
-            ),
-          ],
-
           const SizedBox(height: 10),
-
-          // Symptoms
           Wrap(
-            spacing: 6,
-            runSpacing: 6,
+            spacing: 6, runSpacing: 6,
             children: entry.symptoms.map((s) {
               final isNormal = s == 'Tidak Ada';
               return Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: isNormal ? AppColors.inputBg : AppColors.pinkBg,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(s,
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color:
-                          isNormal ? AppColors.textGray : AppColors.pinkText,
-                    )),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: isNormal ? AppColors.inputBg : AppColors.pinkBg, borderRadius: BorderRadius.circular(8)),
+                child: Text(s, style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w600, color: isNormal ? AppColors.textGray : AppColors.pinkText)),
               );
             }).toList(),
           ),
-
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              if (cond.isNotEmpty)
-                Text('Kondisi: $cond',
-                    style: GoogleFonts.plusJakartaSans(
-                      fontSize: 12,
-                      color: condColor,
-                      fontWeight: FontWeight.w600,
-                    )),
-              const Spacer(),
+              GestureDetector(
+                onTap: onEdit,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: AppColors.mintBg, borderRadius: BorderRadius.circular(8)),
+                  child: Row(children: [const Icon(Icons.edit_outlined, color: AppColors.primary, size: 16), const SizedBox(width: 4), Text('Edit', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary))]),
+                ),
+              ),
+              const SizedBox(width: 10),
               GestureDetector(
                 onTap: () {
                   showDialog(
                     context: context,
                     builder: (_) => AlertDialog(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18)),
-                      title: Text('Hapus Catatan',
-                          style: GoogleFonts.plusJakartaSans(
-                              fontWeight: FontWeight.w700)),
-                      content: Text(
-                          'Yakin ingin menghapus catatan "${entry.foodName}"?',
-                          style: GoogleFonts.plusJakartaSans()),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      title: Text('Hapus Catatan', style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700)),
+                      content: Text('Yakin menghapus "${entry.foodName}"?'),
                       actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: Text('Batal',
-                              style: GoogleFonts.plusJakartaSans(
-                                  color: AppColors.textGray)),
-                        ),
-                        ElevatedButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                            onDelete();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.pinkText,
-                          ),
-                          child: Text('Hapus',
-                              style: GoogleFonts.plusJakartaSans(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700)),
-                        ),
+                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+                        ElevatedButton(onPressed: () { Navigator.pop(context); onDelete(); }, style: ElevatedButton.styleFrom(backgroundColor: AppColors.pinkText), child: const Text('Hapus', style: TextStyle(color: Colors.white))),
                       ],
                     ),
                   );
                 },
-                child: const Icon(Icons.delete_outline_rounded,
-                    color: AppColors.textLight, size: 20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(color: AppColors.pinkBg, borderRadius: BorderRadius.circular(8)),
+                  child: Row(children: [const Icon(Icons.delete_outline_rounded, color: AppColors.pinkText, size: 16), const SizedBox(width: 4), Text('Hapus', style: GoogleFonts.plusJakartaSans(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.pinkText))]),
+                ),
               ),
             ],
           ),
@@ -398,26 +243,29 @@ class _EntryCard extends StatelessWidget {
 
 class _AvatarBadge extends StatelessWidget {
   final String letter;
-  const _AvatarBadge({required this.letter});
-
+  final String? imageUrl;
+  const _AvatarBadge({required this.letter, this.imageUrl});
+  
   @override
   Widget build(BuildContext context) {
+    // Trik memaksa Flutter merefresh gambar dengan menambahkan argumen timestamp palsu
+    final String? refreshedImageUrl = imageUrl != null 
+        ? '$imageUrl?v=${DateTime.now().millisecondsSinceEpoch}' 
+        : null;
+
     return Container(
-      width: 44,
-      height: 44,
+      width: 44, height: 44,
       decoration: BoxDecoration(
-        color: AppColors.mintLight,
-        shape: BoxShape.circle,
+        color: AppColors.mintLight, 
+        shape: BoxShape.circle, 
         border: Border.all(color: AppColors.primary, width: 2),
+        image: refreshedImageUrl != null 
+            ? DecorationImage(image: NetworkImage(refreshedImageUrl), fit: BoxFit.cover) 
+            : null,
       ),
-      child: Center(
-        child: Text(letter,
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.primary,
-            )),
-      ),
+      child: imageUrl == null 
+          ? Center(child: Text(letter, style: GoogleFonts.plusJakartaSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.primary))) 
+          : null,
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../theme/app_colors.dart';
 import '../services/app_state.dart';
 import 'main_screen.dart';
@@ -7,204 +8,172 @@ import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
-
   @override
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _usernameCtrl = TextEditingController();
+  final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  bool _obscurePassword = true;
+  bool _obscure   = true;
   bool _isLoading = false;
   String? _error;
 
-  void _login() async {
-    setState(() { _error = null; _isLoading = true; });
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (_usernameCtrl.text.trim().isEmpty || _passwordCtrl.text.trim().isEmpty) {
-      setState(() { _error = 'Username dan password wajib diisi.'; _isLoading = false; });
-      return;
-    }
-    AppState().login(_usernameCtrl.text.trim());
-    if (!mounted) return;
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainScreen()));
-  }
-
   @override
   void dispose() {
-    _usernameCtrl.dispose();
+    _emailCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    final email    = _emailCtrl.text.trim();
+    final password = _passwordCtrl.text.trim();
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Email dan password wajib diisi.');
+      return;
+    }
+    setState(() { _error = null; _isLoading = true; });
+    try {
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      await AppState.instance.loadAll();
+      if (!mounted) return;
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => const MainScreen()));
+    } on AuthException catch (e) {
+      setState(() => _error = _friendlyError(e.message));
+    } catch (e) {
+      setState(() => _error = 'Terjadi kesalahan. Coba lagi.');
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _friendlyError(String msg) {
+    if (msg.contains('Invalid login')) return 'Email atau password salah.';
+    if (msg.contains('Email not confirmed')) return 'Email belum dikonfirmasi. Cek inbox kamu.';
+    return msg;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
-        child: Column(
-          children: [
-            // ── Form card ──────────────────────────────────────────────────
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 48, 24, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Login',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textDark,
-                        )),
-                    const SizedBox(height: 6),
-                    Text('Masuk ke akun StomaCare kamu',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14,
-                          color: AppColors.textGray,
-                        )),
-                    const SizedBox(height: 36),
-
-                    // Username
-                    _buildTextField(
-                      controller: _usernameCtrl,
-                      hint: 'Username',
-                      icon: Icons.person_outline_rounded,
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Password
-                    _buildTextField(
-                      controller: _passwordCtrl,
-                      hint: 'Password',
-                      icon: _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      obscure: _obscurePassword,
-                      onIconTap: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                    const SizedBox(height: 8),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text('Lupa password?',
-                          style: GoogleFonts.plusJakartaSans(
-                            fontSize: 13,
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                          )),
-                    ),
-
-                    if (_error != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.pinkBg,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.error_outline,
-                                color: AppColors.pinkText, size: 18),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(_error!,
-                                  style: GoogleFonts.plusJakartaSans(
-                                    fontSize: 13,
-                                    color: AppColors.pinkText,
-                                  )),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 28),
-
-                    // Login button
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton.icon(
-                        onPressed: _isLoading ? null : _login,
-                        icon: _isLoading
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.white))
-                            : const Icon(Icons.login_rounded, color: Colors.white),
-                        label: Text('Login',
-                            style: GoogleFonts.plusJakartaSans(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            )),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16)),
-                          elevation: 0,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // ── Green bottom section ────────────────────────────────────────
-            Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(32),
-                  topRight: Radius.circular(32),
-                ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        bottom: false,
+        // CustomScrollView memastikan UI merespon Keyboard dengan sempurna
+        child: CustomScrollView(
+          physics: const BouncingScrollPhysics(),
+          slivers: [
+            SliverFillRemaining(
+              hasScrollBody: false,
               child: Column(
                 children: [
-                  const Text('👋', style: TextStyle(fontSize: 36)),
-                  const SizedBox(height: 10),
-                  Text('Halo, Selamat Datang!',
-                      style: GoogleFonts.plusJakartaSans(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      )),
-                  const SizedBox(height: 4),
-                  Text('Belum punya akun?',
-                      style: GoogleFonts.plusJakartaSans(
-                          fontSize: 14, color: Colors.white70)),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Daftar sekarang dan mulai pantau\nkesehatan lambungmu.',
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.plusJakartaSans(
-                        fontSize: 13, color: Colors.white60),
-                  ),
-                  const SizedBox(height: 20),
-                  OutlinedButton(
-                    onPressed: () => Navigator.push(context,
-                        MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.white, width: 2),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 14),
+                  // ── BAGIAN ATAS (PUTIH): Form Login ──
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(32, 60, 32, 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Login',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 32, fontWeight: FontWeight.w800,
+                                color: AppColors.primaryDark,
+                              )),
+                          const SizedBox(height: 6),
+                          Text('Masuk ke akun StomaCare kamu',
+                              style: GoogleFonts.plusJakartaSans(
+                                  fontSize: 14, color: AppColors.textLight)),
+                          const SizedBox(height: 40),
+
+                          _buildField(
+                            controller: _emailCtrl,
+                            hint: 'E-mail',
+                            icon: Icons.email_rounded,
+                            keyboardType: TextInputType.emailAddress,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildField(
+                            controller: _passwordCtrl,
+                            hint: 'Password',
+                            icon: _obscure ? Icons.visibility_off : Icons.visibility,
+                            obscure: _obscure,
+                            onIconTap: () => setState(() => _obscure = !_obscure),
+                          ),
+
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {}, 
+                              child: Text('Lupa password?', style: GoogleFonts.plusJakartaSans(fontSize: 12, color: AppColors.textLight, fontWeight: FontWeight.w600))
+                            ),
+                          ),
+
+                          if (_error != null) ...[
+                            const SizedBox(height: 8),
+                            _ErrorBanner(message: _error!),
+                            const SizedBox(height: 12),
+                          ],
+
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity, height: 54,
+                            child: ElevatedButton.icon(
+                              onPressed: _isLoading ? null : _login,
+                              icon: _isLoading ? const SizedBox() : const Icon(Icons.login_rounded, color: Colors.white, size: 20),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primaryLight,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                elevation: 0,
+                              ),
+                              label: _isLoading
+                                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                                  : Text('Login',
+                                      style: GoogleFonts.plusJakartaSans(
+                                        fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white,
+                                      )),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Text('Daftar Sekarang',
-                        style: GoogleFonts.plusJakartaSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
-                        )),
+                  ),
+
+                  // ── BAGIAN BAWAH (HIJAU): Register Link ──
+                  Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.only(topLeft: Radius.circular(32), topRight: Radius.circular(32)),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(24, 40, 24, 50),
+                    child: Column(
+                      children: [
+                        const Text('👋', style: TextStyle(fontSize: 48)),
+                        const SizedBox(height: 16),
+                        Text('Halo, Selamat Datang!',
+                            style: GoogleFonts.plusJakartaSans(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                        const SizedBox(height: 8),
+                        Text('Belum punya akun?\nDaftar sekarang dan mulai pantau\nkesehatan lambungmu.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.plusJakartaSans(fontSize: 14, color: Colors.white70, height: 1.5)),
+                        const SizedBox(height: 24),
+                        OutlinedButton(
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.white, width: 1.5),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 14),
+                          ),
+                          child: Text('Daftar Sekarang',
+                              style: GoogleFonts.plusJakartaSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -215,35 +184,41 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    required IconData icon,
-    bool obscure = false,
-    VoidCallback? onIconTap,
-  }) {
+  Widget _buildField({required TextEditingController controller, required String hint, required IconData icon, bool obscure = false, VoidCallback? onIconTap, TextInputType? keyboardType}) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.inputBg,
+        color: AppColors.cardBg, 
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.divider, width: 1.5), 
       ),
       child: TextField(
-        controller: controller,
-        obscureText: obscure,
-        style: GoogleFonts.plusJakartaSans(
-            fontSize: 15, color: AppColors.textDark),
+        controller: controller, obscureText: obscure, keyboardType: keyboardType,
+        style: GoogleFonts.plusJakartaSans(fontSize: 15, color: AppColors.textDark),
         decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: GoogleFonts.plusJakartaSans(
-              fontSize: 15, color: AppColors.textLight),
-          suffixIcon: GestureDetector(
-            onTap: onIconTap,
-            child: Icon(icon, color: AppColors.textGray, size: 20),
-          ),
+          hintText: hint, hintStyle: GoogleFonts.plusJakartaSans(color: AppColors.textLight, fontSize: 14, fontWeight: FontWeight.w500),
+          suffixIcon: GestureDetector(onTap: onIconTap, child: Icon(icon, color: AppColors.textGray, size: 22)),
           border: InputBorder.none,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
         ),
+      ),
+    );
+  }
+}
+
+class _ErrorBanner extends StatelessWidget {
+  final String message;
+  const _ErrorBanner({required this.message});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: AppColors.pinkBg, borderRadius: BorderRadius.circular(12)),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline, color: AppColors.pinkText, size: 18),
+          const SizedBox(width: 8),
+          Expanded(child: Text(message, style: GoogleFonts.plusJakartaSans(fontSize: 13, color: AppColors.pinkText))),
+        ],
       ),
     );
   }

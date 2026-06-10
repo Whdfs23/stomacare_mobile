@@ -4,6 +4,8 @@ class AppColors {
   static const Color primary       = Color(0xFF2E5C45);
   static const Color primaryDark   = Color(0xFF1E3D2F);
   static const Color primaryLight  = Color(0xFF3D7A5C);
+  static const Color primaryAccent = Color(0xFFEAF5EE); // Hijau Sangat Muda
+  
   static const Color background    = Color(0xFFF5F7F5);
   static const Color cardBg        = Color(0xFFFFFFFF);
   static const Color mintBg        = Color(0xFFEAF5EE);
@@ -26,7 +28,7 @@ class AppColors {
   static const Color textLight  = Color(0xFF9CA3AF);
 
   static const Color divider  = Color(0xFFE5E7EB);
-  static const Color inputBg  = Color(0xFFF1F5F1);
+  static const Color inputBg  = Color(0xFFF4F6F5); // Warna abu terang mockup
   static const Color logoutRed = Color(0xFFEF4444);
 
   // Chart bar colors
